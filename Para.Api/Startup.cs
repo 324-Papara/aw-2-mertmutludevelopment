@@ -13,6 +13,7 @@ public class Startup
     }
     
     
+    [Obsolete("Obsolete")]
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddControllersWithViews()
