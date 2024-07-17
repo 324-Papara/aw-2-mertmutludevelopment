@@ -1,0 +1,14 @@
+# Ignore object files and directories
+obj/
+
+# Ignore Rider project files
+.idea/
+
+# Ignore build output directories
+bin/
+
+# Ignore app settings
+
+
+# Ignore Rider project model file
+obj/rider.project.model.nuget.info
