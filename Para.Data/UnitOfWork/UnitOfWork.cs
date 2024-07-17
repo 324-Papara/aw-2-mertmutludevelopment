@@ -1,43 +1,27 @@
+using Para.Base.Entity;
 using Para.Data.Context;
-using Para.Data.Domain;
 using Para.Data.GenericRepository;
-
-namespace Para.Data.UnitOfWork;
-
-public class UnitOfWork : IUnitOfWork, IDisposable
+namespace Para.Data.UnitOfWork
 {
-    private readonly ParaPostgreDbContext dbContext;
-    
-    public IGenericRepository<Customer> CustomerRepository { get; }
-    public IGenericRepository<CustomerDetail> CustomerDetailRepository { get; }
-    public IGenericRepository<CustomerAddress> CustomerAddressRepository { get; }
-    public IGenericRepository<CustomerPhone> CustomerPhoneRepository { get; }
-    
-    
-
-    public UnitOfWork(ParaPostgreDbContext dbContext)
+    public class UnitOfWork : IUnitOfWork
     {
-        this.dbContext = dbContext;
+        private readonly ParaPostgreDbContext dbContext;
+        private readonly Dictionary<Type, object> repositories;
 
-        CustomerRepository = new GenericRepository<Customer>(this.dbContext);
-        CustomerDetailRepository = new GenericRepository<CustomerDetail>(this.dbContext);
-        CustomerAddressRepository = new GenericRepository<CustomerAddress>(this.dbContext);
-        CustomerPhoneRepository = new GenericRepository<CustomerPhone>(this.dbContext);
-    }
-
-    public void Dispose()
-    {
-    }
-
-    public async Task Complete()
-    {
-        await dbContext.SaveChangesAsync();
-    }
-    
-    public async Task CompleteWithTransaction()
-    {
-        using (var dbTransaction = await dbContext.Database.BeginTransactionAsync())
+        public UnitOfWork(ParaPostgreDbContext dbContext)
         {
+            this.dbContext = dbContext;
+            repositories = new Dictionary<Type, object>();
+        }
+
+        public async Task Complete()
+        {
+            await dbContext.SaveChangesAsync();
+        }
+
+        public async Task CompleteWithTransaction()
+        {
+            await using var dbTransaction = await dbContext.Database.BeginTransactionAsync();
             try
             {
                 await dbContext.SaveChangesAsync();
@@ -49,6 +33,23 @@ public class UnitOfWork : IUnitOfWork, IDisposable
                 Console.WriteLine(ex);
                 throw;
             }
+        }
+
+        public IGenericRepository<TEntity> Repository<TEntity>() where TEntity : BaseEntity
+        {
+            if (repositories.ContainsKey(typeof(TEntity)))
+            {
+                return repositories[typeof(TEntity)] as IGenericRepository<TEntity>;
+            }
+
+            var repositoryInstance = new GenericRepository<TEntity>(dbContext);
+            repositories.Add(typeof(TEntity), repositoryInstance);
+            return repositoryInstance;
+        }
+
+        public void Dispose()
+        {
+            dbContext.Dispose();
         }
     }
 }

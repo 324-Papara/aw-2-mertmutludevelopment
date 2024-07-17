@@ -1,24 +1,22 @@
 using Microsoft.EntityFrameworkCore;
-using Para.Data.Configuration;
 using Para.Data.Domain;
 
-namespace Para.Data.Context;
-
-public class ParaPostgreDbContext : DbContext
+namespace Para.Data.Context
 {
-    public ParaPostgreDbContext(DbContextOptions<ParaPostgreDbContext> options) : base(options)
+    public class ParaPostgreDbContext : DbContext
     {
-        
-    }
-    
-    public DbSet<Customer> Customers { get; set; }
-    public DbSet<CustomerAddress> CustomerAddresses { get; set; }
-    public DbSet<CustomerPhone> CustomerPhones { get; set; }
-    
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder.ApplyConfiguration(new CustomerConfiguration());
-        modelBuilder.ApplyConfiguration(new CustomerAddressConfiguration());
-        modelBuilder.ApplyConfiguration(new CustomerPhoneConfiguration());
+        public ParaPostgreDbContext(DbContextOptions<ParaPostgreDbContext> options) : base(options)
+        {
+        }
+
+        public DbSet<Customer> Customers { get; set; }
+        public DbSet<CustomerDetail> CustomerDetails { get; set; }
+        public DbSet<CustomerAddress> CustomerAddresses { get; set; }
+        public DbSet<CustomerPhone> CustomerPhones { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+        }
     }
 }

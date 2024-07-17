@@ -1,14 +1,14 @@
-using Para.Data.Domain;
+using Para.Base.Entity;
 using Para.Data.GenericRepository;
+using System;
+using System.Threading.Tasks;
 
-namespace Para.Data.UnitOfWork;
-
-public interface IUnitOfWork
+namespace Para.Data.UnitOfWork
 {
-    Task Complete(); 
-    Task CompleteWithTransaction();
-    IGenericRepository<Customer> CustomerRepository { get; }
-    IGenericRepository<CustomerDetail> CustomerDetailRepository { get; }
-    IGenericRepository<CustomerAddress> CustomerAddressRepository { get; }
-    IGenericRepository<CustomerPhone> CustomerPhoneRepository { get; }
+    public interface IUnitOfWork : IDisposable
+    {
+        Task Complete();
+        Task CompleteWithTransaction();
+        IGenericRepository<TEntity> Repository<TEntity>() where TEntity : BaseEntity;
+    }
 }

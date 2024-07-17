@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -19,9 +20,14 @@ public class Startup
     [Obsolete("Obsolete")]
     public void ConfigureServices(IServiceCollection services)
     {
-        services.AddControllersWithViews()
-            .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<Startup>());
-        services.AddControllers();
+
+        services.AddControllers()
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+                options.JsonSerializerOptions.WriteIndented = true;
+                options.JsonSerializerOptions.PropertyNamingPolicy = null;
+            });
         services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "Para.Api", Version = "v1" });

@@ -1,8 +1,8 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Para.Data.Context;
 using Para.Data.Domain;
+using Para.Data.UnitOfWork;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Para.Api.Controllers
 {
@@ -10,49 +10,89 @@ namespace Para.Api.Controllers
     [ApiController]
     public class CustomersController : ControllerBase
     {
-        private readonly ParaPostgreDbContext dbContext;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public CustomersController(ParaPostgreDbContext dbContext)
+        public CustomersController(IUnitOfWork unitOfWork)
         {
-            this.dbContext = dbContext;
+            _unitOfWork = unitOfWork;
         }
 
-
         [HttpGet]
-        public async Task<List<Customer>> Get()
+        public async Task<ActionResult<IEnumerable<Customer>>> Get()
         {
-            var entityList1 = await dbContext.Set<Customer>().Include(x=> x.CustomerAddresses).Include(x=> x.CustomerPhones).Include(x=> x.CustomerDetail).ToListAsync();
-            var entityList2 = await dbContext.Customers.Include(x=> x.CustomerAddresses).Include(x=> x.CustomerPhones).Include(x=> x.CustomerDetail).ToListAsync();
-            return entityList1;
+            var customers = await _unitOfWork.Repository<Customer>().GetAll();
+            return Ok(customers);
         }
 
         [HttpGet("{customerId}")]
-        public async Task<Customer?> Get(long customerId)
+        public async Task<ActionResult<Customer>> Get(long customerId)
         {
-            var entity = await dbContext.Set<Customer>().Include(x=> x.CustomerAddresses).Include(x=> x.CustomerPhones).Include(x=> x.CustomerDetail).FirstOrDefaultAsync(x => x.Id == customerId);
-            return entity;
+            var customer = await _unitOfWork.Repository<Customer>().GetById(customerId);
+
+            if (customer == null)
+                return NotFound();
+
+            return Ok(customer);
         }
 
         [HttpPost]
-        public async Task Post([FromBody] Customer value)
+        public async Task<ActionResult<Customer>> Post([FromBody] Customer value)
         {
-            var entity = await dbContext.Set<Customer>().AddAsync(value);
-            await dbContext.SaveChangesAsync();
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (value.CustomerAddresses == null)
+            {
+                value.CustomerAddresses = new List<CustomerAddress>();
+            }
+
+            if (value.CustomerPhones == null)
+            {
+                value.CustomerPhones = new List<CustomerPhone>();
+            }
+
+            if (value.CustomerDetail == null)
+            {
+                value.CustomerDetail = new CustomerDetail();
+            }
+
+            value.CustomerDetail.Customer = value;
+
+            await _unitOfWork.Repository<Customer>().Insert(value);
+            await _unitOfWork.Complete();
+            return CreatedAtAction(nameof(Get), new { customerId = value.Id }, value);
         }
 
         [HttpPut("{customerId}")]
-        public async Task Put(long customerId, [FromBody] Customer value)
+        public async Task<ActionResult> Put(long customerId, [FromBody] Customer value)
         {
-            dbContext.Set<Customer>().Update(value);
-            await dbContext.SaveChangesAsync();
+            if (customerId != value.Id)
+                return BadRequest("Customer ID mismatch");
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            value.CustomerDetail.Customer = value;
+
+            _unitOfWork.Repository<Customer>().Update(value);
+            await _unitOfWork.Complete();
+            return NoContent();
         }
 
         [HttpDelete("{customerId}")]
-        public async Task Delete(long customerId)
+        public async Task<ActionResult> Delete(long customerId)
         {
-            var entity = await dbContext.Set<Customer>().FirstOrDefaultAsync(x => x.Id == customerId);
-            if (entity != null) dbContext.Set<Customer>().Remove(entity);
-            await dbContext.SaveChangesAsync();
+            var customer = await _unitOfWork.Repository<Customer>().GetById(customerId);
+            if (customer == null)
+                return NotFound();
+
+            await _unitOfWork.Repository<Customer>().Delete(customerId);
+            await _unitOfWork.Complete();
+            return NoContent();
         }
     }
 }

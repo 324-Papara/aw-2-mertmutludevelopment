@@ -1,9 +1,12 @@
-namespace Para.Base.Entity;
+using System;
 
-public class BaseEntity
+namespace Para.Base.Entity
 {
-    public long Id { get; set; }
-    public string InsertUser { get; set; }
-    public DateTime InsertDate { get; set; }
-    public bool IsActive { get; set; }
+    public abstract class BaseEntity
+    {
+        public long Id { get; set; }
+        public bool IsActive { get; set; } = true;
+        public DateTime InsertDate { get; set; } = DateTime.UtcNow;
+        public string InsertUser { get; set; } = "System";
+    }
 }
