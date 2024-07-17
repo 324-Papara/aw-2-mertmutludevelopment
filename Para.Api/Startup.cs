@@ -1,5 +1,8 @@
 using FluentValidation.AspNetCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Para.Data.Context;
+using Para.Data.UnitOfWork;
 
 namespace Para.Api;
 
@@ -23,6 +26,9 @@ public class Startup
         {
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "Para.Api", Version = "v1" });
         });
+        var connectionStringPostgres = Configuration.GetConnectionString("PostgresSqlConnection");
+        services.AddDbContext<ParaPostgreDbContext>(options => options.UseNpgsql(connectionStringPostgres));
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
